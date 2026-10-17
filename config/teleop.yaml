@@ -1,0 +1,50 @@
+# Cascada KSR-01 – teleoperación con escala cartesiana.
+# POR VALIDAR = valor provisional, no medido. Cambiarlo tras medir o con el CAD vigente.
+
+model:
+  # MJCF oficial vendorizado: cascada_control/kinematics/models/so_arm100/ (ver SOURCE.md)
+  tip_body: Fixed_Jaw
+
+teleop:
+  rate_hz: 100                 # POR VALIDAR (LeRobot usa 60 por defecto)
+  # Escala de POSICIÓN: 8 → 1 mm de la herramienta modelo = 0.125 mm del seguidor.
+  # Escalar (p. ej. 8.0) o por eje [sx, sy, sz]. Nunca se aplica a la fuerza.
+  position_scale: 8.0
+  # Orientación: DECISIÓN = "copy": la rotación relativa del modelo se copia 1:1,
+  # sin escalar. El SO-ARM100 tiene 5 ejes: la IK prioriza la posición y
+  # aproxima la orientación lo que permite el brazo.
+  orientation: copy
+  deadband_m: 0.00002          # en el espacio del seguidor. POR MEDIR: ruido de la fuente de pose / escala
+  one_euro:                    # POR AJUSTAR con la fuente de pose real
+    min_cutoff_hz: 1.0
+    beta: 20.0
+    d_cutoff_hz: 1.0
+  max_speed_m_s: 0.02          # TCP del seguidor. POR VALIDAR
+  max_accel_m_s2: 0.5          # POR VALIDAR
+  watchdog_timeout_ms: 50      # sin muestra de pose en este tiempo → seguidor detenido. POR VALIDAR
+  # Fuerza: escala independiente de position_scale; no implementada en este corte.
+
+# Dos seguidores SO-ARM100 (STS3215). Cada uno trabaja en el marco de su base.
+arms:
+  left:
+    servo_ids: [1, 2, 3, 4, 5]                 # POR CONFIGURAR en el bus real
+    offsets_counts: [2048, 2048, 2048, 2048, 2048]  # cuenta en q=0. POR CALIBRAR
+    signs: [1, 1, 1, 1, 1]                     # POR CALIBRAR
+    # TCP provisional: centro de fixed_jaw_pad_1 del MJCF (marco Fixed_Jaw).
+    # Cada herramienta de trabajo necesita su TCP calibrado (spec §5.1).
+    tcp_offset_m: [0.0089, -0.1014, 0.0]
+    model_to_follower_rotation: [[1, 0, 0], [0, 1, 0], [0, 0, 1]]  # POR CALIBRAR
+    workspace:                 # caja del TCP en el marco de la base. POR VALIDAR con el CAD
+      lower_m: [-0.10, -0.32, 0.01]
+      upper_m: [0.10, -0.12, 0.20]
+      mode: reject             # reject (recomendado) | clamp
+  right:
+    servo_ids: [1, 2, 3, 4, 5]
+    offsets_counts: [2048, 2048, 2048, 2048, 2048]
+    signs: [1, 1, 1, 1, 1]
+    tcp_offset_m: [0.0089, -0.1014, 0.0]
+    model_to_follower_rotation: [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+    workspace:
+      lower_m: [-0.10, -0.32, 0.01]
+      upper_m: [0.10, -0.12, 0.20]
+      mode: reject
